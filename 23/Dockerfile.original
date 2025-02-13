@@ -1,0 +1,54 @@
+## Copyright (c) 2021, Oracle and/or its affiliates.
+ARG BASE_IMAGE=oraclelinux:8
+FROM ${BASE_IMAGE}
+
+LABEL maintainer="Stephen Balousek <stephen.balousek@oracle.com>"
+
+ARG INSTALLER
+RUN : ${INSTALLER:?}
+
+ENV OGG_HOME=/u01/ogg
+ENV OGG_DEPLOYMENT_HOME=/u02
+ENV OGG_TEMPORARY_FILES=/u03
+ENV OGG_DEPLOYMENT_SCRIPTS=/u01/ogg/scripts
+ENV PATH="${OGG_HOME}/bin:${PATH}"
+
+COPY install-*.sh /tmp/
+COPY ${INSTALLER} /tmp/installer.zip
+COPY bin/ /usr/local/bin/
+
+# Install dependencies
+RUN yum update -y && yum install -y shadow-utils && yum clean all
+
+# Run installation scripts
+RUN bash -c "/tmp/install-prerequisites.sh" && \
+    bash -c "/tmp/install-deployment.sh" && \
+    rm -fr /tmp/* /etc/nginx
+
+COPY nginx/ /etc/nginx/
+
+EXPOSE 80 443
+VOLUME [ "${OGG_DEPLOYMENT_HOME}", "${OGG_TEMPORARY_FILES}", "${OGG_DEPLOYMENT_SCRIPTS}" ]
+
+# Ensure the 'ogg' user exists
+RUN id ogg || useradd -m -s /bin/bash ogg
+RUN usermod -u 1001880000 ogg
+
+# Fix ownership for OpenShift
+RUN mkdir -p /u02 /u03 && \
+    chown -R 1001880000:1001880000 /u02 /u03 && \
+    chmod -R 775 /u02 /u03
+
+# Set correct permissions
+RUN chmod +x /usr/local/bin/deployment-main.sh
+
+# OpenShift compatibility: Remove unnecessary chmod -R g=u /etc/passwd
+
+HEALTHCHECK --start-period=90s --interval=30s --retries=3 \
+    CMD [ "/usr/local/bin/healthcheck" ]
+#RUN chmod +x /usr/local/bin/healthcheck && chown 1001880000:1001880000 /usr/local/bin/healthcheck
+
+# Use 'ogg' user instead of hardcoded UID
+USER ogg
+
+ENTRYPOINT [ "/usr/local/bin/deployment-main.sh" ]

@@ -1,0 +1,7 @@
+#!/bin/sh
+if ! whoami &> /dev/null; then
+  if [ -w /etc/passwd ]; then
+    echo "ogg:x:1001880000:0:OGG User:${HOME}:/sbin/nologin" >> /etc/passwd
+  fi
+fi
+exec "$@"
