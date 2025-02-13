@@ -1,0 +1,18 @@
+# Use Oracle Linux 8 as the base image
+FROM oraclelinux:8
+
+# Set environment variables if needed
+ENV LANG=en_US.UTF-8
+
+# Update the system and install basic utilities
+RUN dnf update -y && \
+    dnf install -y \
+    vim \
+    curl \
+    wget \
+    tar \
+    unzip \
+    && dnf clean all
+
+# Set a default command
+CMD ["/bin/bash"]
