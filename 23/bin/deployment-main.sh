@@ -92,7 +92,11 @@ function locate_lib_jvm() {
 ##  Return a string used for running a process as the 'ogg' user
 ##
 function run_as_ogg() {
-	echo "su - ogg -s /bin/bash -c"
+	local user="ogg"
+	local uid gid
+	uid="$(id -u "${user}")"
+	gid="$(id -g "${user}")"
+	echo "setpriv --ruid ${uid} --euid ${uid} --groups ${gid} --rgid ${gid} --egid ${gid} -- "
 }
 
 ##

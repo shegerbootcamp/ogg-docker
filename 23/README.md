@@ -195,7 +195,7 @@ docker run -dti \
 -e OGG_ADMIN=oggadmin \
 -e OGG_ADMIN_PWD=NEF1/eyTvO8K-+TvC \
 -e OGG_DEPLOYMENT=local \
-cloudsheger/goldengate-free:latest
+oracle/ogg:23
 
 
 docker run -dti \
@@ -206,14 +206,14 @@ docker run -dti \
 -e OGG_ADMIN=oggadmin \
 -e OGG_ADMIN_PWD=NEF1/eyTvO8K-+TvC \
 -e OGG_DEPLOYMENT=local \
-oracle/ogg:latest
+oracle/ogg:23
 
 
 # Ensure directories exist before changing ownership
 RUN groupmod -g 1001880000 ogg && \
     usermod -u 1001880000 -g 1001880000 ogg && \
     mkdir -p ${OGG_DEPLOYMENT_HOME} ${OGG_TEMPORARY_FILES} ${OGG_DEPLOYMENT_SCRIPTS} ${OGG_HOME} && \
-    chown -R 1001880000:1001880000 ${OGG_DEPLOYMENT_HOME} ${OGG_TEMPORARY_FILES} ${OGG_DEPLOYMENT_SCRIPTS} ${OGG_HOME}
+    chown -R 1001880000:1001880000 ${OGG_DEPLOYMENT_HOME} ${OGG_TEMPORARY_FILES} ${OGG_DEPLOYMENT_SCRIPTS} 
 
 docker exec -it --user ogg f115a3b68ac3 /bin/bash
 docker builder prune

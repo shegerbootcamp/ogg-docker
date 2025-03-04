@@ -9,6 +9,10 @@ ORA_HOME="/u01/app"
 INSTALLER="/tmp/installer.zip"
 
 ##
+##  Install the deployment from a "ShipHome" ZIP file
+##
+
+##
 ##  Terminate with an error message
 ##
 function abort() {
@@ -20,7 +24,11 @@ function abort() {
 ##  Return a string used for running a process as the 'ogg' user
 ##
 function run_as_ogg() {
-	echo "su - ogg -s /bin/bash -c"
+	local user="ogg"
+	local uid gid
+	uid="$(id -u "${user}")"
+	gid="$(id -g "${user}")"
+	echo "setpriv --ruid ${uid} --euid ${uid} --groups ${gid} --rgid ${gid} --egid ${gid} -- "
 }
 
 ##
@@ -28,7 +36,7 @@ function run_as_ogg() {
 ##
 function ogg_installer_setup() {
 	[[ -f "${INSTALLER}" ]] || abort "Source file '${INSTALLER}' does not exist"
-	mkdir -p "/tmp/installer"
+	mkdir "/tmp/installer"
 	unzip -q "${INSTALLER}" -d "/tmp/installer" || abort "Unzip operation failed for '${INSTALLER}'"
 	chmod -R o=g-w "/tmp/installer"
 }
@@ -54,7 +62,6 @@ function ogg_install_option() {
 function ogg_install() {
 	mkdir -p "${OGG_HOME}"
 	chown -R ogg:ogg "$(dirname "${OGG_HOME}")"
-
 	installer="$(find /tmp/installer -name runInstaller | head -1)"
 	if [[ -n "${installer}" ]]; then
 		cat <<EOF >"/tmp/installer.rsp"
@@ -64,19 +71,15 @@ SOFTWARE_LOCATION=${OGG_HOME}
 INVENTORY_LOCATION=${ORA_HOME}/oraInventory
 UNIX_GROUP_NAME=ogg
 EOF
-
-		# Run installer as 'ogg' user
-		$(run_as_ogg) "${installer} -silent -waitforcompletion -ignoreSysPrereqs -responseFile /tmp/installer.rsp"
-
+		$(run_as_ogg) "${installer}" -silent -waitforcompletion -ignoreSysPrereqs -responseFile "/tmp/installer.rsp"
 		"${ORA_HOME}/oraInventory/orainstRoot.sh"
 	else
-		# Extract tarball as 'ogg' user
-		tar xf /tmp/installer/*.tar -C "${OGG_HOME}"
-		chown -R ogg:ogg "${OGG_HOME}"
+		$(run_as_ogg) tar xf /tmp/installer/*.tar -C "${OGG_HOME}"
 	fi
 
 	mkdir -p "${OGG_HOME}/scripts/"{setup,startup}
 	chown -R ogg:ogg "${OGG_HOME}/scripts"
+
 }
 
 ##
